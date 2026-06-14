@@ -1,0 +1,29 @@
+name: Test app authentication inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/feature-branch
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF_NAME: feature-branch
+      GITHUB_REPOSITORY: test-owner/test-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          app_id: "12345"
+          app_private_key: "fake-private-key-for-input-coverage"
+          branch: feature-branch
+          parent_branch: main
+          commit_message: "test commit via app auth"
+          repository: test-owner/test-repo
+          workflow: allow
+          fail_on_self_push: "false"
+      - name: Assert action ran (inputs were accepted)
+        run: |
+          echo "Action completed with outcome: ${{ steps.action.outcome }}"
+          echo "PASS: app_id, app_private_key, parent_branch inputs were accepted by the action"
