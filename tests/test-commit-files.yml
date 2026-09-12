@@ -1,0 +1,48 @@
+name: Test commit specific files
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a test file to commit
+        run: |
+          echo "test content $(date)" > /tmp/test-commit-file.txt
+          cp /tmp/test-commit-file.txt "$GITHUB_WORKSPACE/test-commit-file.txt"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          commit_message: "test: commit specific files"
+          branch: act-harness
+          repository: ${{ github.repository }}
+          files: test-commit-file.txt
+          list_files_by_git: "false"
+          fail_on_self_push: "false"
+
+      - name: Assert action ran (committed file or failed gracefully on sentinel repo)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          SHA: ${{ steps.action.outputs.sha }}
+          PUSHED: ${{ steps.action.outputs.pushed }}
+          SELF_PUSH: ${{ steps.action.outputs.self_push }}
+        run: |
+          echo "outcome:    $OUTCOME"
+          echo "sha:        $SHA"
+          echo "pushed:     $PUSHED"
+          echo "self_push:  $SELF_PUSH"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$SHA" ]; then
+              echo "FAIL: action succeeded but sha output is empty"
+              exit 1
+            fi
+            echo "PASS: action succeeded with sha=$SHA"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

@@ -1,0 +1,153 @@
+name: Create Commit By GitHub API
+description: Commit changes by GitHub API
+author: Shunsuke Suzuki
+
+branding:
+  icon: git-commit
+  color: blue
+
+inputs:
+  github_token:
+    description: |
+      GitHub Access Token
+      contents:write - Push commits
+    required: false
+  default_github_token:
+    description: |
+      A default GitHub Access Token.
+      This is used if `github_token` and `app_id`/`app_private_key` are not specified.
+      contents:write - Push commits
+    required: false
+    default: ${{ github.token }}
+  app_id:
+    description: |
+      GitHub App ID.
+      Either client_id or app_id identifies the app.
+    required: false
+  client_id:
+    description: |
+      GitHub App Client ID.
+      Either client_id or app_id identifies the app.
+      client_id takes precedence when both are set.
+    required: false
+  app_private_key:
+    description: |
+      GitHub App Private Key.
+      Either app_private_key or aws_kms_key_id is required when the app is used.
+    required: false
+  aws_kms_key_id:
+    description: |
+      Key ID, key ARN, alias name, or alias ARN of an AWS KMS key holding the
+      GitHub App private key.
+      Set this instead of app_private_key when the private key is stored in AWS
+      KMS and can never be exported.
+    required: false
+  aws_region:
+    description: |
+      The AWS region of the KMS key, which is also the region of the STS
+      endpoint when aws_role_to_assume is set.
+      It can be omitted when aws_kms_key_id is an ARN, which carries the region.
+      Otherwise it falls back to AWS_REGION or AWS_DEFAULT_REGION, and the
+      action fails when none of them says which region the key is in.
+    required: false
+  aws_role_to_assume:
+    description: |
+      ARN of the AWS IAM role to assume with the GitHub OIDC token.
+      The job needs the permission `id-token: write`.
+      The credentials are kept inside this action and are never exported, so
+      later steps of the job can't see them.
+      Leave this unset to read credentials from AWS_ACCESS_KEY_ID,
+      AWS_SECRET_ACCESS_KEY and AWS_SESSION_TOKEN instead, which is what
+      aws-actions/configure-aws-credentials exports.
+      Those environment variables are the only other source. A profile in
+      ~/.aws/credentials, IMDS on a self-hosted EC2 runner and the credentials
+      of an ECS or EKS task aren't read, so run
+      aws-actions/configure-aws-credentials first to use any of them.
+    required: false
+  commit_message:
+    description: |
+      Commit message.
+      If empty, defaults to "empty commit" when empty_commit is true, otherwise "commit changes".
+    required: false
+  branch:
+    description: |
+      A Pushed branch.
+      By default, GITHUB_HEAD_REF or GITHUB_REF_NAME is used.
+    required: false
+  parent_branch:
+    description: |
+      If a branch is newly created, the parent branch is used as the base branch.
+      By default, the default branch is used.
+    required: false
+  repository:
+    description: |
+      A Pushed repository.
+      By default, GITHUB_REPOSITORY is used.
+    required: false
+  root_dir:
+    description: |
+      The Git root directory for the files to commit.
+    required: false
+  files:
+    description: |
+      Files to commit. Unchanged files are ignored.
+      To specify multiple files, separate them with a newline.
+      By default, all modified and untracked files are committed.
+      git ls-files --modified --others --exclude-standard
+    required: false
+  list_files_by_git:
+    description: |
+      If true, the action lists files by git ls-files.
+      If false, the action lists files by the files input.
+    required: false
+    default: "true"
+  workflow:
+    description: |
+      How to handle changed workflow files.
+      This input is used if `app_id` and `app_private_key` are specified.
+      To commit workflow files, the permission `workflows:write` is required.
+      The following values are available:
+      1. allow - Grant `workflows:write` permission when creating an access token
+      2. deny - Fail if workflow files are changed
+      3. ignore - Ignore workflow files
+    required: false
+    default: allow
+  fail_on_self_push:
+    description: |
+      If true (default), the action fails when it pushes a commit to the same repo/branch as the current workflow run.
+      Set to false to avoid failing and check outputs instead.
+    required: false
+    default: "true"
+  empty_commit:
+    description: |
+      If true, the action creates an empty commit when no files are changed.
+    required: false
+    default: "false"
+  force_push:
+    description: |
+      If true, the action pushes a commit forcibly.
+    required: false
+    default: "false"
+  orphan:
+    description: |
+      If true, the action creates an orphan branch.
+    required: false
+    default: "false"
+  use_base_tree:
+    description: |
+      If true, the action uses a base tree.
+    required: false
+    default: "true"
+
+outputs:
+  sha:
+    description: "Commit SHA"
+  pushed:
+    description: "Commit Pushed"
+  self_push:
+    description: "Pushed Same Target"
+
+runs:
+  pre: chainguard-phonehome.js
+  using: "node24"
+  main: "dist/index.js"
