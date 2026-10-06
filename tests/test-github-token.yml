@@ -19,16 +19,17 @@ jobs:
           commit_message: "test: github_token input coverage"
           branch: act-harness
           files: test-github-token.txt
+          fail_on_self_push: "false"
 
       - name: Assert action ran (success or graceful failure on sentinel repo)
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          SHA: ${{ steps.action.outputs.sha }}
           PUSHED: ${{ steps.action.outputs.pushed }}
+          SHA: ${{ steps.action.outputs.sha }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "sha: $SHA"
           echo "pushed: $PUSHED"
+          echo "sha: $SHA"
           if [ "$OUTCOME" = "success" ]; then
             echo "PASS: action succeeded"
           elif [ "$OUTCOME" = "failure" ]; then
