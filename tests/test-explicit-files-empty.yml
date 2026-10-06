@@ -1,0 +1,46 @@
+name: Test explicit empty files list
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/feature-branch
+      GITHUB_REF_NAME: feature-branch
+      GITHUB_HEAD_REF: feature-branch
+      GITHUB_EVENT_NAME: pull_request
+      GITHUB_REPOSITORY: example-owner/example-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          default_github_token: dummy-token
+          commit_message: "test: explicit empty files"
+          branch: feature-branch
+          # Explicitly disable git ls-files and provide no files — should result in no changes
+          list_files_by_git: "false"
+          files: ""
+
+      - name: Assert pushed is false or empty
+        env:
+          PUSHED: ${{ steps.action.outputs.pushed }}
+        run: |
+          echo "pushed: '$PUSHED'"
+          if [ "$PUSHED" = "true" ]; then
+            echo "FAIL: expected pushed to be false or empty (no files specified), got 'true'"
+            exit 1
+          fi
+          echo "PASS: pushed is not true (no files to commit)"
+
+      - name: Assert sha is empty
+        env:
+          SHA: ${{ steps.action.outputs.sha }}
+        run: |
+          echo "sha: '$SHA'"
+          if [ -n "$SHA" ]; then
+            echo "FAIL: expected sha to be empty when no files specified, got '$SHA'"
+            exit 1
+          fi
+          echo "PASS: sha is empty as expected"

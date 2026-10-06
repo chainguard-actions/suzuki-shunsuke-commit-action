@@ -1,0 +1,44 @@
+name: Test branch detection from environment
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/pull/42/merge
+      GITHUB_EVENT_NAME: pull_request
+      GITHUB_HEAD_REF: my-feature-branch
+      GITHUB_BASE_REF: main
+      GITHUB_REPOSITORY: example-owner/example-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          default_github_token: dummy-token
+          commit_message: "test: branch from env"
+          # No branch input — action should use GITHUB_HEAD_REF = my-feature-branch
+          # No files changed in a clean checkout, so action exits early before API call
+
+      - name: Assert action did not push (no changes)
+        env:
+          PUSHED: ${{ steps.action.outputs.pushed }}
+        run: |
+          echo "pushed: '$PUSHED'"
+          if [ "$PUSHED" = "true" ]; then
+            echo "FAIL: expected pushed to be false or empty (no changes), got 'true'"
+            exit 1
+          fi
+          echo "PASS: action completed without pushing (no changes detected)"
+
+      - name: Assert self_push is false or empty
+        env:
+          SELF_PUSH: ${{ steps.action.outputs.self_push }}
+        run: |
+          echo "self_push: '$SELF_PUSH'"
+          if [ "$SELF_PUSH" = "true" ]; then
+            echo "FAIL: expected self_push to be false or empty (no push occurred)"
+            exit 1
+          fi
+          echo "PASS: self_push is not true"

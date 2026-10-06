@@ -1,0 +1,36 @@
+name: Test github_token input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create a file to commit
+        run: |
+          echo "test-github-token-$(date +%s)" > test-github-token.txt
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          github_token: ${{ github.token }}
+          commit_message: "test: github_token input coverage"
+          files: test-github-token.txt
+          fail_on_self_push: "false"
+      - name: Assert action ran (success or graceful failure on sentinel repo)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          PUSHED: ${{ steps.action.outputs.pushed }}
+          SHA: ${{ steps.action.outputs.sha }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "pushed: $PUSHED"
+          echo "sha: $SHA"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with github_token input"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

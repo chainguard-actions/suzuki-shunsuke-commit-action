@@ -1,0 +1,44 @@
+name: Test no-changes scenario
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_REF_NAME: main
+      GITHUB_EVENT_NAME: push
+      GITHUB_REPOSITORY: example-owner/example-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          # Use a dummy token — action exits before calling GitHub API when no files changed
+          default_github_token: dummy-token
+          commit_message: "test: no changes"
+          branch: main
+          # list_files_by_git defaults to true; in a clean checkout there are no modified files
+
+      - name: Assert pushed is false or empty
+        env:
+          PUSHED: ${{ steps.action.outputs.pushed }}
+        run: |
+          echo "pushed: '$PUSHED'"
+          if [ "$PUSHED" = "true" ]; then
+            echo "FAIL: expected pushed to be false or empty (no changes), got 'true'"
+            exit 1
+          fi
+          echo "PASS: pushed is not true (no changes were committed)"
+
+      - name: Assert sha is empty
+        env:
+          SHA: ${{ steps.action.outputs.sha }}
+        run: |
+          echo "sha: '$SHA'"
+          if [ -n "$SHA" ]; then
+            echo "FAIL: expected sha to be empty when no changes, got '$SHA'"
+            exit 1
+          fi
+          echo "PASS: sha is empty as expected"
