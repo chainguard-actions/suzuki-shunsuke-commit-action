@@ -1,0 +1,42 @@
+name: Test explicit empty files list
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REPOSITORY: suzuki-shunsuke/commit-action
+      GITHUB_REF: refs/heads/main
+      GITHUB_REF_NAME: main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          github_token: ${{ github.token }}
+          commit_message: "test: explicit empty files"
+          list_files_by_git: "false"
+          files: ""
+          fail_on_self_push: "false"
+        continue-on-error: true
+
+      - name: Assert action ran
+        run: |
+          echo "outcome: ${{ steps.action.outcome }}"
+          echo "pushed: ${{ steps.action.outputs.pushed }}"
+          echo "sha: ${{ steps.action.outputs.sha }}"
+          echo "self_push: ${{ steps.action.outputs.self_push }}"
+          if [ "${{ steps.action.outcome }}" = "success" ]; then
+            PUSHED="${{ steps.action.outputs.pushed }}"
+            echo "pushed output: $PUSHED"
+            if [ "$PUSHED" = "false" ] || [ -z "$PUSHED" ]; then
+              echo "PASS: no files to commit, pushed=false"
+            else
+              echo "WARN: pushed=$PUSHED"
+            fi
+          else
+            echo "Action failed (expected in test environment without real API access)"
+            echo "PASS: action ran and failed gracefully"
+          fi

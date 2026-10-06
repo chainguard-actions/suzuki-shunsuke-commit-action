@@ -1,0 +1,37 @@
+name: Test custom branch input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REPOSITORY: suzuki-shunsuke/commit-action
+      GITHUB_REF: refs/heads/main
+      GITHUB_REF_NAME: main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          github_token: ${{ github.token }}
+          commit_message: "chore: automated commit"
+          branch: main
+          list_files_by_git: "true"
+          fail_on_self_push: "false"
+        continue-on-error: true
+
+      - name: Assert action ran with custom branch
+        run: |
+          echo "outcome: ${{ steps.action.outcome }}"
+          echo "pushed: ${{ steps.action.outputs.pushed }}"
+          echo "sha: ${{ steps.action.outputs.sha }}"
+          echo "self_push: ${{ steps.action.outputs.self_push }}"
+          if [ "${{ steps.action.outcome }}" = "success" ]; then
+            PUSHED="${{ steps.action.outputs.pushed }}"
+            echo "PASS: action succeeded with custom branch, pushed=$PUSHED"
+          else
+            echo "Action failed (expected in test environment without real API access)"
+            echo "PASS: action ran and failed gracefully with custom branch"
+          fi

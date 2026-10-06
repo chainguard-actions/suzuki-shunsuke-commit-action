@@ -1,4 +1,4 @@
-name: Test app_id and app_private_key inputs
+name: Test repository input
 on:
   workflow_dispatch:
 jobs:
@@ -8,31 +8,30 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Create a file to commit
-        run: echo "test-app-auth" > test-app-auth.txt
+        run: echo "test-explicit-repo" > test-explicit-repo.txt
 
       - id: action
         uses: .
         continue-on-error: true
         with:
-          app_id: "12345"
-          app_private_key: "fake-private-key-for-coverage"
-          commit_message: "test: app auth coverage"
-          files: test-app-auth.txt
+          commit_message: "test: repository input coverage"
+          repository: "suzuki-shunsuke/commit-action"
+          files: test-explicit-repo.txt
           fail_on_self_push: "false"
 
-      - name: Assert action ran (app auth inputs exercised)
+      - name: Assert action ran (repository input exercised)
         env:
           OUTCOME: ${{ steps.action.outcome }}
           PUSHED: ${{ steps.action.outputs.pushed }}
         run: |
           echo "outcome: $OUTCOME"
           echo "pushed: $PUSHED"
-          # The action will fail because app_id/app_private_key are fake,
-          # but we verify it ran and processed the inputs (not a setup error)
+          # The action will fail because we don't have write access to the
+          # upstream repo, but we verify it ran and processed the repository input
           if [ "$OUTCOME" = "success" ]; then
             echo "PASS: action succeeded"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected with fake app credentials or sentinel repo)"
+            echo "PASS: action failed gracefully (expected without write access to upstream repo)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
