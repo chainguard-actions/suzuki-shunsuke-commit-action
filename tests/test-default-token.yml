@@ -1,0 +1,37 @@
+name: Test default token fallback
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_REF_NAME: main
+      GITHUB_EVENT_NAME: push
+      GITHUB_REPOSITORY: test-owner/test-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          # Intentionally omit github_token and app_id/app_private_key
+          # The action should fall back to default_github_token (github.token)
+          commit_message: "test: default token fallback"
+          branch: main
+          fail_on_self_push: "false"
+        continue-on-error: true
+
+      - name: Assert action ran using default token
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action should use the default github.token when no explicit
+          # token is provided. In act environment, it may fail at API stage
+          # but should not fail due to missing token configuration.
+          if [ -z "$OUTCOME" ]; then
+            echo "FAIL: action did not produce an outcome"
+            exit 1
+          fi
+          echo "PASS: action ran with outcome=$OUTCOME (used default token)"

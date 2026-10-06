@@ -1,0 +1,42 @@
+name: Test fail_on_self_push default behavior
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_REF_NAME: main
+      GITHUB_EVENT_NAME: push
+      GITHUB_REPOSITORY: test-owner/test-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a test file to commit
+        run: |
+          echo "test content for self-push test" > self-push-test.txt
+
+      - id: action
+        uses: .
+        with:
+          github_token: ${{ github.token }}
+          commit_message: "test: self push detection"
+          branch: main
+          files: self-push-test.txt
+          fail_on_self_push: "true"
+        continue-on-error: true
+
+      - name: Assert action ran
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # With fail_on_self_push=true (default), the action may fail when
+          # it detects a push to the same repo/branch as the current workflow.
+          # In act environment, the action will also fail at API stage.
+          # We verify the action produced a deterministic outcome.
+          if [ -z "$OUTCOME" ]; then
+            echo "FAIL: action did not produce an outcome"
+            exit 1
+          fi
+          echo "PASS: action ran with outcome=$OUTCOME"

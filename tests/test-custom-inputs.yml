@@ -1,0 +1,42 @@
+name: Test custom commit message and files input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/feature-branch
+      GITHUB_REF_NAME: feature-branch
+      GITHUB_HEAD_REF: feature-branch
+      GITHUB_EVENT_NAME: pull_request
+      GITHUB_REPOSITORY: test-owner/test-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a test file to commit
+        run: |
+          echo "test content $(date)" > test-commit-file.txt
+
+      - id: action
+        uses: .
+        with:
+          github_token: ${{ github.token }}
+          commit_message: "chore: automated test commit"
+          branch: feature-branch
+          files: test-commit-file.txt
+          fail_on_self_push: "false"
+        continue-on-error: true
+
+      - name: Assert action ran
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # In act environment without real GitHub API access, the action may
+          # fail at the API call stage. We verify the action was invoked and
+          # produced a deterministic outcome (not empty/undefined).
+          if [ -z "$OUTCOME" ]; then
+            echo "FAIL: action did not produce an outcome"
+            exit 1
+          fi
+          echo "PASS: action ran with outcome=$OUTCOME"

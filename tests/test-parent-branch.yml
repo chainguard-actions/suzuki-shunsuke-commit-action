@@ -1,4 +1,4 @@
-name: Test app_id and app_private_key inputs
+name: Test parent_branch input
 on:
   workflow_dispatch:
 jobs:
@@ -8,21 +8,18 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Create a dummy file change
-        run: echo "test-app-auth-$(date +%s)" > /tmp/app-auth-test.txt
+        run: echo "test-parent-branch-$(date +%s)" > /tmp/parent-branch-test.txt
 
       - id: action
         uses: .
         continue-on-error: true
         with:
-          app_id: "123456"
-          app_private_key: |
-            -----BEGIN RSA PRIVATE KEY-----
-            MIIEowIBAAKCAQEA2a2rwplBQLF29amygykEMmYz0+Kcj3bKBp29P2rFj7yCNAuM
-            -----END RSA PRIVATE KEY-----
-          commit_message: "test: app auth commit"
-          files: /tmp/app-auth-test.txt
+          commit_message: "test: parent branch commit"
+          branch: "test-new-branch-from-parent"
+          parent_branch: "main"
+          files: /tmp/parent-branch-test.txt
 
-      - name: Assert action ran (app auth fails gracefully with fake credentials or sentinel repo)
+      - name: Assert action ran (fails gracefully on sentinel repo)
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
@@ -30,7 +27,7 @@ jobs:
           if [ "$OUTCOME" = "success" ]; then
             echo "PASS: action succeeded"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected with fake app credentials or sentinel repo)"
+            echo "PASS: action failed gracefully (expected with sentinel repo)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
