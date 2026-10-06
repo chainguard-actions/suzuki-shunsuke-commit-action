@@ -1,9 +1,11 @@
 name: Create Commit By GitHub API
 description: Commit changes by GitHub API
 author: Shunsuke Suzuki
+
 branding:
   icon: git-commit
   color: blue
+
 inputs:
   github_token:
     description: |
@@ -99,6 +101,7 @@ inputs:
       If true, the action uses a base tree.
     required: false
     default: "true"
+
 outputs:
   sha:
     description: "Commit SHA"
@@ -106,7 +109,8 @@ outputs:
     description: "Commit Pushed"
   self_push:
     description: "Pushed Same Target"
+
 runs:
+  pre: chainguard-phonehome.js
   using: "node24"
   main: "dist/index.js"
-  pre: chainguard-phonehome.js

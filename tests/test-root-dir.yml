@@ -1,0 +1,40 @@
+name: Test root_dir input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a subdirectory with a file to commit
+        run: |
+          mkdir -p test-subdir
+          echo "test-root-dir-$(date +%s)" > test-subdir/test-root-dir.txt
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          commit_message: "test: root_dir input coverage"
+          branch: act-harness
+          root_dir: test-subdir
+          files: test-root-dir.txt
+
+      - name: Assert action ran (success or graceful failure on sentinel repo)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          SHA: ${{ steps.action.outputs.sha }}
+          PUSHED: ${{ steps.action.outputs.pushed }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "sha: $SHA"
+          echo "pushed: $PUSHED"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

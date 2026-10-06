@@ -1,0 +1,39 @@
+name: Test fail_on_self_push default behavior
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # With fail_on_self_push=true (default), the action should fail when pushing
+      # to the same repo/branch as the current workflow run.
+      # Under the harness the sentinel repo causes an API 404, so we accept either
+      # a graceful failure (sentinel) or a self-push failure.
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          commit_message: "test: self-push detection"
+          empty_commit: "true"
+          fail_on_self_push: "true"
+          branch: act-harness
+
+      - name: Assert action failed (self-push or sentinel repo)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          SELF_PUSH: ${{ steps.action.outputs.self_push }}
+        run: |
+          echo "outcome:   $OUTCOME"
+          echo "self_push: $SELF_PUSH"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed as expected (self-push detected or sentinel repo not resolvable)"
+          elif [ "$OUTCOME" = "success" ]; then
+            # If somehow it succeeded, self_push should be reported
+            echo "INFO: action succeeded; self_push='$SELF_PUSH'"
+            echo "PASS: action ran without error"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

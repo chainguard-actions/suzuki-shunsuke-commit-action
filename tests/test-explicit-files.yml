@@ -1,4 +1,4 @@
-name: Test basic usage
+name: Test explicit files input
 on:
   workflow_dispatch:
 jobs:
@@ -7,12 +7,20 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      # Create a file to commit
+      - name: Create a test file
+        run: |
+          echo "test content $(date)" > /tmp/test-commit-file.txt
+          cp /tmp/test-commit-file.txt "$GITHUB_WORKSPACE/test-commit-file.txt"
+
+      # Use list_files_by_git=false and provide explicit files list
       - id: action
         uses: .
         continue-on-error: true
         with:
-          commit_message: "test: basic commit"
-          empty_commit: "true"
+          commit_message: "test: explicit files commit"
+          files: "test-commit-file.txt"
+          list_files_by_git: "false"
           fail_on_self_push: "false"
           branch: act-harness
 
@@ -23,16 +31,16 @@ jobs:
           PUSHED: ${{ steps.action.outputs.pushed }}
           SELF_PUSH: ${{ steps.action.outputs.self_push }}
         run: |
-          echo "outcome:    $OUTCOME"
-          echo "sha:        $SHA"
-          echo "pushed:     $PUSHED"
-          echo "self_push:  $SELF_PUSH"
+          echo "outcome:   $OUTCOME"
+          echo "sha:       $SHA"
+          echo "pushed:    $PUSHED"
+          echo "self_push: $SELF_PUSH"
           if [ "$OUTCOME" = "success" ]; then
             if [ -z "$SHA" ] && [ "$PUSHED" != "true" ]; then
               echo "FAIL: action succeeded but no sha or pushed output"
               exit 1
             fi
-            echo "PASS: action succeeded with sha='$SHA' pushed='$PUSHED' self_push='$SELF_PUSH'"
+            echo "PASS: action succeeded with sha='$SHA' pushed='$PUSHED'"
           elif [ "$OUTCOME" = "failure" ]; then
             echo "PASS: action failed gracefully (sentinel repo is not resolvable via GitHub API)"
           else
