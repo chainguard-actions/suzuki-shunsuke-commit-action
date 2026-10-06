@@ -1,41 +1,41 @@
-name: Test GitHub App authentication inputs
+name: Test GitHub App Authentication Inputs
 on:
   workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_REF: refs/heads/feature-branch
-      GITHUB_EVENT_NAME: push
-      GITHUB_REPOSITORY: test-owner/test-repo
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - name: Create a test file to commit
         run: |
-          echo "app auth test content" > /tmp/app-test-file.txt
+          echo "test-app-auth-$(date +%s)" > test-app-auth-file.txt
+
       - id: action
         uses: .
         continue-on-error: true
         with:
-          app_id: "12345"
+          app_id: "123456"
           app_private_key: "fake-private-key-for-testing"
-          branch: feature-branch
-          parent_branch: main
-          repository: test-owner/test-repo
-          root_dir: /tmp
-          commit_message: "test commit via app auth"
-          files: /tmp/app-test-file.txt
+          commit_message: "test: app auth commit"
+          branch: act-harness
           fail_on_self_push: "false"
-          workflow: allow
-      - name: Assert action ran with app auth inputs
+
+      - name: Assert action ran with app_id and app_private_key inputs
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          PUSHED: ${{ steps.action.outputs.pushed }}
         run: |
-          echo "pushed: ${{ steps.action.outputs.pushed }}"
-          echo "sha: ${{ steps.action.outputs.sha }}"
-          echo "self_push: ${{ steps.action.outputs.self_push }}"
-          echo "outcome: ${{ steps.action.outcome }}"
-          # The action may fail due to fake app credentials, but it should have run
-          if [ "${{ steps.action.outcome }}" = "skipped" ]; then
-            echo "FAIL: action was skipped unexpectedly"
+          echo "outcome: $OUTCOME"
+          echo "pushed: $PUSHED"
+          # The action may fail because the app credentials are fake or the repo is a sentinel.
+          # What matters is that the action accepted the app_id and app_private_key inputs
+          # and ran (did not error on missing inputs).
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with app auth inputs"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected with fake app credentials or sentinel repo)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
           fi
-          echo "PASS: action ran with app auth inputs (outcome=${{ steps.action.outcome }})"

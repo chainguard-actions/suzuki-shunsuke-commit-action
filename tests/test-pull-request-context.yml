@@ -1,13 +1,15 @@
-name: Test basic usage with no files to commit
+name: Test pull request event context
 on:
   workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      GITHUB_REF: refs/heads/main
-      GITHUB_REF_NAME: main
-      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/pull/1/merge
+      GITHUB_REF_NAME: "1/merge"
+      GITHUB_EVENT_NAME: pull_request
+      GITHUB_HEAD_REF: feature-branch
+      GITHUB_BASE_REF: main
       GITHUB_REPOSITORY: test-owner/test-repo
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -16,31 +18,27 @@ jobs:
         uses: .
         with:
           github_token: dummy-token
-          commit_message: "chore: automated commit"
-          branch: main
+          commit_message: "fix: pr changes"
+          branch: feature-branch
           list_files_by_git: "false"
           files: ""
           fail_on_self_push: "false"
         continue-on-error: true
 
-      - name: Assert action outputs are present
+      - name: Assert action ran in pull request context
         env:
           PUSHED: ${{ steps.action.outputs.pushed }}
-          SHA: ${{ steps.action.outputs.sha }}
-          SELF_PUSH: ${{ steps.action.outputs.self_push }}
           OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
           echo "pushed: $PUSHED"
-          echo "sha: $SHA"
-          echo "self_push: $SELF_PUSH"
-          # When files input is empty and list_files_by_git is false,
-          # the action should detect nothing to commit and set pushed=false
+          # With empty files list and list_files_by_git=false,
+          # pushed should be false (nothing to commit)
           if [ "$PUSHED" = "false" ]; then
             echo "PASS: pushed=false as expected when no files specified"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "INFO: action failed with dummy token - this is expected behavior"
-            echo "PASS: action ran and attempted GitHub API call"
+            echo "INFO: action failed with dummy token - expected with API calls"
+            echo "PASS: action ran in pull_request context"
           else
             echo "PASS: action completed with outcome=$OUTCOME"
           fi

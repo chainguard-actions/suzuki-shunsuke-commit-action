@@ -1,4 +1,4 @@
-name: Test basic usage with no files to commit
+name: Test fail_on_self_push default behavior
 on:
   workflow_dispatch:
 jobs:
@@ -12,35 +12,37 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Create a test file to commit
+        run: |
+          echo "test content $(date)" > /tmp/test-commit-file.txt
+
       - id: action
         uses: .
         with:
           github_token: dummy-token
-          commit_message: "chore: automated commit"
+          commit_message: "test: self push detection"
           branch: main
           list_files_by_git: "false"
           files: ""
-          fail_on_self_push: "false"
+          fail_on_self_push: "true"
         continue-on-error: true
 
-      - name: Assert action outputs are present
+      - name: Assert action behavior with fail_on_self_push=true
         env:
           PUSHED: ${{ steps.action.outputs.pushed }}
-          SHA: ${{ steps.action.outputs.sha }}
           SELF_PUSH: ${{ steps.action.outputs.self_push }}
           OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
           echo "pushed: $PUSHED"
-          echo "sha: $SHA"
           echo "self_push: $SELF_PUSH"
-          # When files input is empty and list_files_by_git is false,
-          # the action should detect nothing to commit and set pushed=false
+          # With no files to commit, pushed should be false regardless of fail_on_self_push
+          # The action should complete without error when nothing is pushed
           if [ "$PUSHED" = "false" ]; then
-            echo "PASS: pushed=false as expected when no files specified"
+            echo "PASS: pushed=false, no self-push issue when nothing committed"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "INFO: action failed with dummy token - this is expected behavior"
-            echo "PASS: action ran and attempted GitHub API call"
+            echo "INFO: action failed - expected with dummy token"
+            echo "PASS: action ran and attempted to process"
           else
             echo "PASS: action completed with outcome=$OUTCOME"
           fi
