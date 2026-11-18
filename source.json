@@ -4,8 +4,13 @@
   "version": "v1.0.0",
   "commit_sha": "06e3b49d4706498d325d29bd85adc82ecf2f5d8f",
   "url": "https://github.com/suzuki-shunsuke/commit-action",
-  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
   "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
   "test_agent_version": "2",
-  "harden_agent_version": "2"
+  "harden_agent_version": "2",
+  "dist_artifact": {
+    "gcs_uri": "gs://patch-actions-node-artifacts/dist-artifacts/suzuki-shunsuke/commit-action/v1.0.0/sha256-703e54586f1caca8ff9ca60d16f82f11a8893bedf476ac466cf0148480937961.tar.gz",
+    "sha256": "703e54586f1caca8ff9ca60d16f82f11a8893bedf476ac466cf0148480937961",
+    "size_bytes": 325728
+  }
 }
